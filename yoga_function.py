@@ -63,6 +63,35 @@ def stop_detection_yoga(self, canvas=None):
             canvas.create_image(0, 0, anchor=tk.NW, image=self.default_image)
             canvas.image = self.default_image
 
+# def process_pose_detection(self, frame, canvas):
+#     # Resize frame for pose detection
+#     pose_frame = cv2.resize(frame, (650, 430))  # Adjust the size for the model
+#     results = self.model(pose_frame)
+#     detected_poses = []  # List to store actual detected poses
+
+#     for result in results:
+#         # Check if keypoints exist and if boxes contain detected classes
+#         if result.keypoints is not None and result.boxes is not None and len(result.boxes.cls) > 0:
+#             for i, keypoints in enumerate(result.keypoints):
+#                 if i < len(result.boxes.cls):  # Check if index is within bounds
+#                     class_id = int(result.boxes.cls[i])  # Get class ID (integer) for the detected pose
+#                     if class_id in self.class_labels:  # Check confidence level
+#                         pose_name = self.class_labels[class_id]  # Map class ID to pose name
+#                         detected_poses.append(pose_name)  # Store the detected pose
+                        
+#                         confidence = result.boxes.conf[i]
+#                         if(confidence > 0.8):
+#                             self.start_pose_timer(pose_name)  # Start the timer for the detected pose
+
+#     # Stop timers for poses that are no longer detected
+#     for pose_name in self.pose_durations:
+#         if pose_name not in detected_poses:
+#             self.stop_pose_timer(pose_name)
+
+#     # Annotate the frame with the detection results
+#     annotated_frame = results[0].plot()
+#     return annotated_frame
+
 def process_pose_detection(self, frame, canvas):
     # Resize frame for pose detection
     pose_frame = cv2.resize(frame, (650, 430))  # Adjust the size for the model
@@ -83,13 +112,26 @@ def process_pose_detection(self, frame, canvas):
                         if(confidence > 0.8):
                             self.start_pose_timer(pose_name)  # Start the timer for the detected pose
 
+            # **Draw bounding box but no lines**:
+            # Get the coordinates for the bounding box
+            for box in result.boxes.xyxy:
+                x1, y1, x2, y2 = map(int, box)  # Convert to integer coordinates
+                # Draw bounding box around the detected pose
+                cv2.rectangle(pose_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)  # Green box with thickness 2
+                
+                # Display confidence score (optional)
+                confidence = result.boxes.conf[0]  # Confidence score of the detected pose
+                label = f"{self.class_labels[class_id]}: {confidence:.2f}"
+                cv2.putText(pose_frame, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
     # Stop timers for poses that are no longer detected
     for pose_name in self.pose_durations:
         if pose_name not in detected_poses:
             self.stop_pose_timer(pose_name)
 
-    # Annotate the frame with the detection results
-    annotated_frame = results[0].plot()
+    # **Don't draw keypoints or skeleton lines, just return the frame with bounding boxes**
+    annotated_frame = cv2.cvtColor(pose_frame, cv2.COLOR_BGR2RGB)  # Convert frame to RGB format
+
     return annotated_frame
 
 def start_pose_timer(self, pose_name):
