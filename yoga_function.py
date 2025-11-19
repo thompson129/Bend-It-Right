@@ -83,14 +83,29 @@ def process_pose_detection(self, frame, canvas):
                         if(confidence > 0.8):
                             self.start_pose_timer(pose_name)  # Start the timer for the detected pose
 
+            # **Draw bounding box but no lines**:
+            # Get the coordinates for the bounding box
+            for box in result.boxes.xyxy:
+                x1, y1, x2, y2 = map(int, box)  # Convert to integer coordinates
+                # Draw bounding box around the detected pose
+                cv2.rectangle(pose_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)  # Green box with thickness 2
+                
+                # Display confidence score (optional)
+                confidence = result.boxes.conf[0]  # Confidence score of the detected pose
+                label = f"{self.class_labels[class_id]}: {confidence:.2f}"
+                cv2.putText(pose_frame, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
     # Stop timers for poses that are no longer detected
     for pose_name in self.pose_durations:
         if pose_name not in detected_poses:
             self.stop_pose_timer(pose_name)
 
-    # Annotate the frame with the detection results
-    annotated_frame = results[0].plot()
-    return annotated_frame
+    # **No need to convert to RGB now; we use BGR directly**
+    annotated_frame = pose_frame  # No need for color conversion now, keep it in BGR
+
+    # Convert the frame to PIL Image for Tkinter canvas
+    annotated_frame_rgb = Image.fromarray(annotated_frame)  # Use BGR directly
+    return annotated_frame_rgb
 
 def start_pose_timer(self, pose_name):
     """Start or resume the timer for the detected pose."""
